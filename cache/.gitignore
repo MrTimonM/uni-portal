@@ -1,0 +1,3 @@
+*.cache.php
+!.htaccess
+!.gitignore

@@ -1,100 +1,83 @@
 <?php
-session_start();
-include "db.php";
+require_once __DIR__ . '/app.php';
+require_login(['faculty']);
 
-$message = "";
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit();
-}
-
-$user_id = $_SESSION['user_id'];
-
-$sql = "SELECT faculty_id FROM faculty WHERE user_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->execute([$user_id]);
-$faculty = $stmt->fetch(PDO::FETCH_ASSOC);
+$message = '';
+$faculty = fetch_one('SELECT faculty_id FROM faculty WHERE user_id = ?', [$_SESSION['user_id']]);
 
 if (!$faculty) {
-    die("Only faculty members can submit results.");
+    redirect('dashboard.php');
 }
 
-$faculty_id = $faculty['faculty_id'];
+$facultyId = $faculty['faculty_id'];
+$sections = cached_fetch_all('submit_results', 'SELECT sections.section_id, courses.course_code, courses.title, sections.section_name
+    FROM sections
+    INNER JOIN courses ON sections.course_id = courses.course_id
+    WHERE sections.faculty_id = ?
+    ORDER BY courses.course_code', [$facultyId]);
 
-$sql = "SELECT 
-            sections.section_id,
-            courses.course_code,
-            courses.title,
-            sections.section_name
-        FROM sections
-        INNER JOIN courses ON sections.course_id = courses.course_id
-        WHERE sections.faculty_id = ?";
+$students = cached_fetch_all('submit_results', 'SELECT students.student_id, users.name, students.program
+    FROM students
+    INNER JOIN users ON students.user_id = users.user_id
+    ORDER BY users.name');
 
-$stmt = $conn->prepare($sql);
-$stmt->execute([$faculty_id]);
-$sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $allowed = fetch_one('SELECT section_id FROM sections WHERE section_id = ? AND faculty_id = ?', [$_POST['section_id'], $facultyId]);
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $student_id = $_POST['student_id'];
-    $section_id = $_POST['section_id'];
-    $grade = $_POST['grade'];
-    $gpa = $_POST['gpa'];
-
-    $check = "SELECT section_id FROM sections 
-              WHERE section_id = ? AND faculty_id = ?";
-    $checkStmt = $conn->prepare($check);
-    $checkStmt->execute([$section_id, $faculty_id]);
-
-    if ($checkStmt->rowCount() > 0) {
-        $sql = "INSERT INTO results(student_id, section_id, grade, gpa)
-                VALUES (?, ?, ?, ?)";
-
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([$student_id, $section_id, $grade, $gpa]);
-
-        $message = "Result submitted successfully!";
+    if ($allowed) {
+        $stmt = $conn->prepare('INSERT INTO results(student_id, section_id, grade, gpa) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$_POST['student_id'], $_POST['section_id'], strtoupper(trim($_POST['grade'])), $_POST['gpa']]);
+        cache_clear();
+        $message = 'Result submitted successfully.';
     } else {
-        $message = "You are not allowed to submit result for this section.";
+        $message = 'You are not allowed to submit result for this section.';
     }
 }
+
+render_header('Submit Results', 'submit_results.php');
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Submit Results</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+<?php if ($message) { ?><p class="success"><?php echo h($message); ?></p><?php } ?>
 
-<div class="container">
-    <h1>Submit Results</h1>
-
-    <p class="success"><?php echo $message; ?></p>
-
-    <form method="POST">
-        <input type="number" name="student_id" placeholder="Student ID" required>
-
-        <select name="section_id" required>
-            <option value="">Select Your Section</option>
-
-            <?php foreach ($sections as $section) { ?>
-                <option value="<?php echo $section['section_id']; ?>">
-                    <?php echo $section['course_code'] . " - " . $section['title'] . " - Section " . $section['section_name']; ?>
-                </option>
-            <?php } ?>
-        </select>
-
-        <input type="text" name="grade" placeholder="Grade" required>
-
-        <input type="text" name="gpa" placeholder="GPA" required>
-
+<section class="panel small">
+    <form method="POST" class="form-grid">
+        <div class="field full">
+            <label>Student</label>
+            <select name="student_id" required>
+                <option value="">Select student</option>
+                <?php foreach ($students as $student) { ?>
+                    <option value="<?php echo h($student['student_id']); ?>"><?php echo h($student['student_id'] . ' - ' . $student['name'] . ' - ' . $student['program']); ?></option>
+                <?php } ?>
+            </select>
+        </div>
+        <div class="field full">
+            <label>Section</label>
+            <select name="section_id" required>
+                <option value="">Select your section</option>
+                <?php foreach ($sections as $section) { ?>
+                    <option value="<?php echo h($section['section_id']); ?>"><?php echo h($section['course_code'] . ' - ' . $section['title'] . ' - Section ' . $section['section_name']); ?></option>
+                <?php } ?>
+            </select>
+        </div>
+        <div class="field">
+            <label>Grade</label>
+            <select name="grade" required>
+                <option>A</option>
+                <option>A-</option>
+                <option>B+</option>
+                <option>B</option>
+                <option>C+</option>
+                <option>C</option>
+                <option>D</option>
+                <option>F</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>GPA</label>
+            <input name="gpa" placeholder="4.00" required>
+        </div>
         <button type="submit">Submit Result</button>
     </form>
+</section>
 
-    <a class="btn" href="dashboard.php">Back</a>
-</div>
-
-</body>
-</html>
+<?php render_footer(); ?>

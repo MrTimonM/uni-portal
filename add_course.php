@@ -1,43 +1,38 @@
 <?php
-include "db.php";
+require_once __DIR__ . '/app.php';
+require_login(['admin']);
 
-$message = "";
+$message = '';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $course_code = $_POST['course_code'];
-    $title = $_POST['title'];
-    $credit = $_POST['credit'];
-
-    $sql = "INSERT INTO courses(course_code, title, credit) VALUES (?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute([$course_code, $title, $credit]);
-
-    $message = "Course added successfully!";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $stmt = $conn->prepare('INSERT INTO courses(course_code, title, credit) VALUES (?, ?, ?)');
+    $stmt->execute([strtoupper(trim($_POST['course_code'])), trim($_POST['title']), (int) $_POST['credit']]);
+    cache_clear();
+    $message = 'Course added successfully.';
 }
+
+render_header('Add Course', 'course_list.php');
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Course</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+<?php if ($message) { ?><p class="success"><?php echo h($message); ?></p><?php } ?>
 
-<div class="container small">
-    <h1>Add Course</h1>
-    <p class="success"><?php echo $message; ?></p>
-
-    <form method="POST">
-        <input type="text" name="course_code" placeholder="Course Code" required>
-        <input type="text" name="title" placeholder="Course Title" required>
-        <input type="number" name="credit" placeholder="Credit" required>
-
+<section class="panel small">
+    <form method="POST" class="form-grid">
+        <div class="field">
+            <label>Course Code</label>
+            <input name="course_code" placeholder="CSE101" required>
+        </div>
+        <div class="field">
+            <label>Credit</label>
+            <input type="number" name="credit" min="1" max="6" required>
+        </div>
+        <div class="field full">
+            <label>Course Title</label>
+            <input name="title" required>
+        </div>
         <button type="submit">Add Course</button>
+        <a class="btn secondary" href="course_list.php">Back</a>
     </form>
+</section>
 
-    <a class="btn" href="dashboard.php">Back</a>
-</div>
-
-</body>
-</html>
+<?php render_footer(); ?>

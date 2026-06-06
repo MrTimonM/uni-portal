@@ -1,51 +1,71 @@
 <?php
-include "db.php";
+require_once __DIR__ . '/db.php';
 
-$message = "";
+$message = '';
+$error = '';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST['email'];
-    $new_password = $_POST['new_password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = trim($_POST['email']);
+    $newPassword = $_POST['new_password'];
 
-    $sql = "SELECT * FROM users WHERE email = ?";
-    $stmt = $conn->prepare($sql);
+    $stmt = $conn->prepare('SELECT user_id FROM users WHERE email = ?');
     $stmt->execute([$email]);
 
-    if ($stmt->rowCount() > 0) {
-        $update = "UPDATE users SET password = ? WHERE email = ?";
-        $updateStmt = $conn->prepare($update);
-        $updateStmt->execute([$new_password, $email]);
-
-        $message = "Password updated successfully. You can login now.";
-    } else {
-        $message = "Email not found!";
+    if ($stmt->fetch()) {
+        $update = $conn->prepare('UPDATE users SET password = ? WHERE email = ?');
+        $update->execute([password_hash($newPassword, PASSWORD_DEFAULT), $email]);
+        header('Location: index.php?message=' . urlencode('Password updated successfully. You can login now.'));
+        exit();
     }
+
+    $error = 'Email not found.';
 }
 ?>
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Forgot Password</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password | University Portal</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="login-body">
+    <section class="login-panel">
+        <div class="login-card">
+            <div class="login-brand">
+                <img class="logo-mark" src="assets/logo.svg" alt="University Portal logo">
+                <span>
+                    <strong>University Portal</strong><br>
+                    <small class="muted">Account recovery</small>
+                </span>
+            </div>
+            <h1>Reset password</h1>
+            <p class="subtitle">Enter your registered email and choose a new password for your portal account.</p>
 
-<div class="container small">
-    <h1>Forgot Password</h1>
+            <?php if ($message) { ?><p class="success"><?php echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8'); ?></p><?php } ?>
+            <?php if ($error) { ?><p class="alert"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p><?php } ?>
 
-    <p class="success"><?php echo $message; ?></p>
-
-    <form method="POST">
-        <input type="email" name="email" placeholder="Enter your registered email" required>
-
-        <input type="password" name="new_password" placeholder="Enter new password" required>
-
-        <button type="submit">Change Password</button>
-    </form>
-
-    <a class="btn" href="index.php">Back to Login</a>
-</div>
-
+            <form method="POST">
+                <div class="field">
+                    <label>Email address</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="field">
+                    <label>New password</label>
+                    <input type="password" name="new_password" required>
+                </div>
+                <button type="submit">Change Password</button>
+            </form>
+            <div class="link-row">
+                <a href="index.php">Back to login</a>
+            </div>
+        </div>
+    </section>
+    <section class="login-art">
+        <div>
+            <h2>Keep access to the academic systems you use every day.</h2>
+            <p>Your updated password is stored securely and can be used immediately.</p>
+        </div>
+    </section>
 </body>
 </html>

@@ -1,57 +1,55 @@
 <?php
-session_start();
-include "db.php";
+require_once __DIR__ . '/app.php';
+require_login(['student']);
 
-$user_id = $_SESSION['user_id'];
+$student = fetch_one('SELECT student_id FROM students WHERE user_id = ?', [$_SESSION['user_id']]);
+$attendance = [];
 
-$sql = "SELECT student_id FROM students WHERE user_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->execute([$user_id]);
-$student = $stmt->fetch(PDO::FETCH_ASSOC);
-
-$student_id = $student['student_id'];
-
-$sql = "SELECT courses.title, attendance.class_date, attendance.status
+if ($student) {
+    $attendance = cached_fetch_all('view_attendance', 'SELECT courses.title, attendance.class_date, attendance.status
         FROM attendance
         INNER JOIN sections ON attendance.section_id = sections.section_id
         INNER JOIN courses ON sections.course_id = courses.course_id
-        WHERE attendance.student_id = ?";
+        WHERE attendance.student_id = ?
+        ORDER BY attendance.class_date DESC', [$student['student_id']]);
+}
 
-$stmt = $conn->prepare($sql);
-$stmt->execute([$student_id]);
-$attendance = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$present = 0;
+foreach ($attendance as $row) {
+    if ($row['status'] === 'Present') {
+        $present++;
+    }
+}
+$rate = count($attendance) ? round(($present / count($attendance)) * 100) : 0;
+
+render_header('Attendance Report', 'view_attendance.php');
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>View Attendance</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+<section class="stats-grid">
+    <div class="stat-card"><span>Total Classes</span><strong><?php echo h(count($attendance)); ?></strong></div>
+    <div class="stat-card"><span>Present</span><strong><?php echo h($present); ?></strong></div>
+    <div class="stat-card"><span>Attendance Rate</span><strong><?php echo h($rate); ?>%</strong></div>
+    <div class="stat-card"><span>Absent</span><strong><?php echo h(count($attendance) - $present); ?></strong></div>
+</section>
 
-<div class="container">
-    <h1>Attendance Report</h1>
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <tr>
+                <th>Course</th>
+                <th>Date</th>
+                <th>Status</th>
+            </tr>
+            <?php foreach ($attendance as $row) { ?>
+                <tr>
+                    <td><?php echo h($row['title']); ?></td>
+                    <td><?php echo h($row['class_date']); ?></td>
+                    <td><span class="badge <?php echo h($row['status']); ?>"><?php echo h($row['status']); ?></span></td>
+                </tr>
+            <?php } ?>
+        </table>
+        <?php if (!$attendance) { ?><div class="empty-state">No attendance records found.</div><?php } ?>
+    </div>
+</section>
 
-    <table>
-        <tr>
-            <th>Course</th>
-            <th>Date</th>
-            <th>Status</th>
-        </tr>
-
-        <?php foreach ($attendance as $row) { ?>
-        <tr>
-            <td><?php echo $row['title']; ?></td>
-            <td><?php echo $row['class_date']; ?></td>
-            <td><?php echo $row['status']; ?></td>
-        </tr>
-        <?php } ?>
-
-    </table>
-
-    <a class="btn" href="dashboard.php">Back</a>
-</div>
-
-</body>
-</html>
+<?php render_footer(); ?>

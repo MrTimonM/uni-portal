@@ -1,44 +1,37 @@
 <?php
-include "db.php";
+require_once __DIR__ . '/app.php';
+require_login(['admin']);
 
-$sql = "SELECT * FROM courses";
-$stmt = $conn->prepare($sql);
-$stmt->execute();
-$courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$courses = cached_fetch_all('course_list', 'SELECT * FROM courses ORDER BY course_code');
+render_header('Courses', 'course_list.php');
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Course List</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+<section class="panel">
+    <div class="section-heading">
+        <div>
+            <h2>Course Catalog</h2>
+            <p class="subtitle"><?php echo h(count($courses)); ?> courses available</p>
+        </div>
+        <a class="btn" href="add_course.php">Add Course</a>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Course Code</th>
+                <th>Title</th>
+                <th>Credit</th>
+            </tr>
+            <?php foreach ($courses as $course) { ?>
+                <tr>
+                    <td><?php echo h($course['course_id']); ?></td>
+                    <td><?php echo h($course['course_code']); ?></td>
+                    <td><?php echo h($course['title']); ?></td>
+                    <td><?php echo h($course['credit']); ?></td>
+                </tr>
+            <?php } ?>
+        </table>
+    </div>
+</section>
 
-<div class="container">
-    <h1>Course List</h1>
-    <p class="subtitle">SELECT query output</p>
-
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Course Code</th>
-            <th>Title</th>
-            <th>Credit</th>
-        </tr>
-
-        <?php foreach ($courses as $course) { ?>
-        <tr>
-            <td><?php echo $course['course_id']; ?></td>
-            <td><?php echo $course['course_code']; ?></td>
-            <td><?php echo $course['title']; ?></td>
-            <td><?php echo $course['credit']; ?></td>
-        </tr>
-        <?php } ?>
-    </table>
-
-    <a class="btn" href="dashboard.php">Back</a>
-</div>
-
-</body>
-</html>
+<?php render_footer(); ?>

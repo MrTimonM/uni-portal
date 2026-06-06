@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">University Portal Logo</title>
+  <desc id="desc">A shield mark with a campus column and UP monogram.</desc>
+  <rect width="160" height="160" rx="28" fill="#102033"/>
+  <path d="M80 20 126 38v34c0 31-18 54-46 68-28-14-46-37-46-68V38l46-18Z" fill="#164b7f"/>
+  <path d="M80 31 115 45v28c0 24-13 43-35 55-22-12-35-31-35-55V45l35-14Z" fill="#f8fafc"/>
+  <path d="M56 67h48v10H56V67Z" fill="#b88a2d"/>
+  <path d="M62 84h9v25h-9V84Zm18 0h9v25h-9V84Zm18 0h9v25h-9V84Z" fill="#164b7f"/>
+  <path d="M58 113h44v8H58v-8Z" fill="#102033"/>
+  <path d="M80 44 54 59h52L80 44Z" fill="#102033"/>
+</svg>

@@ -1,55 +1,62 @@
 <?php
-include "db.php";
+require_once __DIR__ . '/app.php';
+require_login(['admin']);
 
-$message = "";
+$message = '';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = $_POST['name'];
-    $email = $_POST['email'];
-    $password = $_POST['password'];
-    $program = $_POST['program'];
-    $semester = $_POST['semester'];
-    $cgpa = $_POST['cgpa'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $conn->beginTransaction();
 
-    $sql1 = "INSERT INTO users(name, email, password, role) VALUES (?, ?, ?, 'student')";
-    $stmt1 = $conn->prepare($sql1);
-    $stmt1->execute([$name, $email, $password]);
+    $stmt = $conn->prepare("INSERT INTO users(name, email, password, role) VALUES (?, ?, ?, 'student')");
+    $stmt->execute([
+        trim($_POST['name']),
+        trim($_POST['email']),
+        password_hash($_POST['password'], PASSWORD_DEFAULT),
+    ]);
 
-    $user_id = $conn->lastInsertId();
+    $userId = $conn->lastInsertId();
+    $stmt = $conn->prepare('INSERT INTO students(user_id, program, semester, cgpa) VALUES (?, ?, ?, ?)');
+    $stmt->execute([$userId, trim($_POST['program']), (int) $_POST['semester'], $_POST['cgpa']]);
+    $conn->commit();
+    cache_clear();
 
-    $sql2 = "INSERT INTO students(user_id, program, semester, cgpa) VALUES (?, ?, ?, ?)";
-    $stmt2 = $conn->prepare($sql2);
-    $stmt2->execute([$user_id, $program, $semester, $cgpa]);
-
-    $message = "Student added successfully!";
+    $message = 'Student added successfully.';
 }
+
+render_header('Add Student', 'student_list.php');
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Add Student</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+<?php if ($message) { ?><p class="success"><?php echo h($message); ?></p><?php } ?>
 
-<div class="container small">
-    <h1>Add Student</h1>
-    <p class="success"><?php echo $message; ?></p>
-
-    <form method="POST">
-        <input type="text" name="name" placeholder="Student Name" required>
-        <input type="email" name="email" placeholder="Student Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <input type="text" name="program" placeholder="Program" required>
-        <input type="number" name="semester" placeholder="Semester" required>
-        <input type="text" name="cgpa" placeholder="CGPA" required>
-
+<section class="panel small">
+    <form method="POST" class="form-grid">
+        <div class="field full">
+            <label>Student Name</label>
+            <input name="name" required>
+        </div>
+        <div class="field">
+            <label>Email</label>
+            <input type="email" name="email" required>
+        </div>
+        <div class="field">
+            <label>Password</label>
+            <input type="password" name="password" required>
+        </div>
+        <div class="field">
+            <label>Program</label>
+            <input name="program" required>
+        </div>
+        <div class="field">
+            <label>Semester</label>
+            <input type="number" name="semester" min="1" required>
+        </div>
+        <div class="field">
+            <label>CGPA</label>
+            <input name="cgpa" required>
+        </div>
         <button type="submit">Add Student</button>
+        <a class="btn secondary" href="student_list.php">Back</a>
     </form>
+</section>
 
-    <a class="btn" href="dashboard.php">Back</a>
-</div>
-
-</body>
-</html>
+<?php render_footer(); ?>

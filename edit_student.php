@@ -1,60 +1,56 @@
 <?php
-include "db.php";
+require_once __DIR__ . '/app.php';
+require_login(['admin']);
 
-$id = $_GET['id'];
+$id = (int) ($_GET['id'] ?? 0);
+$student = fetch_one('SELECT students.student_id, users.user_id, users.name, users.email, students.program, students.semester, students.cgpa
+    FROM students
+    INNER JOIN users ON students.user_id = users.user_id
+    WHERE students.student_id = ?', [$id]);
 
-$sql = "SELECT students.student_id, users.user_id, users.name, users.email, students.program, students.semester, students.cgpa
-        FROM students
-        INNER JOIN users ON students.user_id = users.user_id
-        WHERE students.student_id = ?";
-
-$stmt = $conn->prepare($sql);
-$stmt->execute([$id]);
-$student = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $name = $_POST['name'];
-    $email = $_POST['email'];
-    $program = $_POST['program'];
-    $semester = $_POST['semester'];
-    $cgpa = $_POST['cgpa'];
-
-    $sql1 = "UPDATE users SET name = ?, email = ? WHERE user_id = ?";
-    $stmt1 = $conn->prepare($sql1);
-    $stmt1->execute([$name, $email, $student['user_id']]);
-
-    $sql2 = "UPDATE students SET program = ?, semester = ?, cgpa = ? WHERE student_id = ?";
-    $stmt2 = $conn->prepare($sql2);
-    $stmt2->execute([$program, $semester, $cgpa, $id]);
-
-    header("Location: student_list.php");
-    exit();
+if (!$student) {
+    redirect('student_list.php');
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $stmt = $conn->prepare('UPDATE users SET name = ?, email = ? WHERE user_id = ?');
+    $stmt->execute([trim($_POST['name']), trim($_POST['email']), $student['user_id']]);
+
+    $stmt = $conn->prepare('UPDATE students SET program = ?, semester = ?, cgpa = ? WHERE student_id = ?');
+    $stmt->execute([trim($_POST['program']), (int) $_POST['semester'], $_POST['cgpa'], $id]);
+    cache_clear();
+
+    redirect('student_list.php');
+}
+
+render_header('Edit Student', 'student_list.php');
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Edit Student</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<div class="container small">
-    <h1>Edit Student</h1>
-
-    <form method="POST">
-        <input type="text" name="name" value="<?php echo $student['name']; ?>" required>
-        <input type="email" name="email" value="<?php echo $student['email']; ?>" required>
-        <input type="text" name="program" value="<?php echo $student['program']; ?>" required>
-        <input type="number" name="semester" value="<?php echo $student['semester']; ?>" required>
-        <input type="text" name="cgpa" value="<?php echo $student['cgpa']; ?>" required>
-
+<section class="panel small">
+    <form method="POST" class="form-grid">
+        <div class="field full">
+            <label>Name</label>
+            <input name="name" value="<?php echo h($student['name']); ?>" required>
+        </div>
+        <div class="field full">
+            <label>Email</label>
+            <input type="email" name="email" value="<?php echo h($student['email']); ?>" required>
+        </div>
+        <div class="field">
+            <label>Program</label>
+            <input name="program" value="<?php echo h($student['program']); ?>" required>
+        </div>
+        <div class="field">
+            <label>Semester</label>
+            <input type="number" name="semester" value="<?php echo h($student['semester']); ?>" required>
+        </div>
+        <div class="field">
+            <label>CGPA</label>
+            <input name="cgpa" value="<?php echo h($student['cgpa']); ?>" required>
+        </div>
         <button type="submit">Update Student</button>
+        <a class="btn secondary" href="student_list.php">Back</a>
     </form>
+</section>
 
-    <a class="btn" href="student_list.php">Back</a>
-</div>
-
-</body>
-</html>
+<?php render_footer(); ?>

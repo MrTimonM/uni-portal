@@ -1,23 +1,19 @@
 <?php
-include "db.php";
+require_once __DIR__ . '/app.php';
+require_login(['admin']);
 
-$id = $_GET['id'];
-
-$sql = "SELECT user_id FROM students WHERE student_id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->execute([$id]);
-$student = $stmt->fetch(PDO::FETCH_ASSOC);
+$id = (int) ($_GET['id'] ?? 0);
+$student = fetch_one('SELECT user_id FROM students WHERE student_id = ?', [$id]);
 
 if ($student) {
-    $sql1 = "DELETE FROM students WHERE student_id = ?";
-    $stmt1 = $conn->prepare($sql1);
-    $stmt1->execute([$id]);
-
-    $sql2 = "DELETE FROM users WHERE user_id = ?";
-    $stmt2 = $conn->prepare($sql2);
-    $stmt2->execute([$student['user_id']]);
+    $conn->beginTransaction();
+    $stmt = $conn->prepare('DELETE FROM students WHERE student_id = ?');
+    $stmt->execute([$id]);
+    $stmt = $conn->prepare('DELETE FROM users WHERE user_id = ?');
+    $stmt->execute([$student['user_id']]);
+    $conn->commit();
+    cache_clear();
 }
 
-header("Location: student_list.php");
-exit();
+redirect('student_list.php');
 ?>

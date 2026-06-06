@@ -1,20 +1,57 @@
 <?php
-$dbname = "university_portal";
-$username = "root";
-$password = "";
+$dbname = getenv('UP_DB_NAME') ?: 'university_portal';
+$username = getenv('UP_DB_USER') ?: 'root';
+$password = getenv('UP_DB_PASS') ?: '';
+$host = getenv('UP_DB_HOST') ?: 'localhost';
+$configuredPort = getenv('UP_DB_PORT') ?: '3312';
+$ports = array_values(array_unique([$configuredPort, '3306']));
+$lastError = null;
 
-try {
-    $conn = new PDO(
-        "mysql:host=localhost;port=3312;dbname=$dbname;charset=utf8",
-        $username,
-        $password
-    );
+foreach ($ports as $port) {
+    try {
+        $conn = new PDO(
+            "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4",
+            $username,
+            $password,
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]
+        );
+        break;
+    } catch (PDOException $e) {
+        $lastError = $e;
 
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        if ((int) $e->getCode() === 1049) {
+            try {
+                $serverConn = new PDO(
+                    "mysql:host=$host;port=$port;charset=utf8mb4",
+                    $username,
+                    $password,
+                    [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    ]
+                );
+                $serverConn->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                $conn = new PDO(
+                    "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4",
+                    $username,
+                    $password,
+                    [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    ]
+                );
+                break;
+            } catch (PDOException $createError) {
+                $lastError = $createError;
+            }
+        }
+    }
+}
 
-    echo "Database Connected Successfully!";
-
-} catch(PDOException $e) {
-    die("Database Connection Failed: " . $e->getMessage());
+if (!isset($conn)) {
+    die('Database Connection Failed: ' . htmlspecialchars($lastError->getMessage()));
 }
 ?>
