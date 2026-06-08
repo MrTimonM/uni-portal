@@ -11,18 +11,11 @@ if (isset($_SESSION['user_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Choose Portal | University Portal</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="portal-select-body">
     <main class="portal-select">
-        <div class="login-brand">
-            <img class="logo-mark" src="assets/logo.svg" alt="University Portal logo">
-            <span>
-                <strong>University Portal</strong><br>
-                <small class="muted">Choose your workspace</small>
-            </span>
-        </div>
-
         <section class="portal-hero">
             <p class="eyebrow">Role based access</p>
             <h1>Different portals for different academic work.</h1>

@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/db.php';
 
 define('CACHE_DIR', __DIR__ . '/cache');
-define('CACHE_DEFAULT_TTL', 60);
+define('CACHE_DEFAULT_TTL', 3600);
 
 function h($value)
 {
@@ -651,6 +651,7 @@ function render_header($title, $active = '')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo h($title); ?> | University Portal</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="app-body">
@@ -705,6 +706,7 @@ function render_role_login($role, $title, $subtitle, $imageUrl, $demoText, $acce
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo h($title); ?> | University Portal</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-body <?php echo h($accentClass); ?>">
@@ -767,9 +769,11 @@ function render_footer()
 <?php
 }
 
-ensure_core_tables();
-ensure_portal_tables();
-seed_sample_data();
+if (filter_var(getenv('UP_AUTO_SETUP') ?: '0', FILTER_VALIDATE_BOOLEAN)) {
+    ensure_core_tables();
+    ensure_portal_tables();
+    seed_sample_data();
+}
 
 if (!headers_sent() && preg_match('/\.(?:css|js|jpg|jpeg|png|svg|webp)$/i', $_SERVER['REQUEST_URI'] ?? '')) {
     header('Cache-Control: public, max-age=604800, immutable');

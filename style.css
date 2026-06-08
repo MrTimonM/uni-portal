@@ -261,18 +261,18 @@ button:hover {
 .portal-select {
     width: min(1120px, calc(100% - 40px));
     margin: 0 auto;
-    padding: 42px 0;
+    padding: 72px 0 34px;
 }
 
 .portal-hero {
     max-width: 760px;
-    margin: 90px 0 34px;
+    margin: 0 0 34px;
 }
 
 .portal-hero h1 {
-    margin: 0 0 16px;
+    margin: 0 0 14px;
     max-width: 760px;
-    font-size: clamp(40px, 7vw, 76px);
+    font-size: clamp(40px, 6.4vw, 70px);
     line-height: 1;
     letter-spacing: 0;
 }
@@ -720,6 +720,7 @@ tr:last-child td {
     .split-grid {
         grid-template-columns: 1fr;
     }
+
 }
 
 @media (max-width: 760px) {
@@ -768,7 +769,7 @@ tr:last-child td {
     }
 
     .portal-hero {
-        margin: 54px 0 26px;
+        margin: 0 0 26px;
     }
 
     .role-grid {
