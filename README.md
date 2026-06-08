@@ -2,31 +2,8 @@
 
 A PHP and MySQL university portal for Admin, Teacher, and Student workflows. The project runs locally with XAMPP and includes role-specific login screens, dashboards, academic records, attendance, results, payments, notices, events, support tickets, library catalog, local assets, and caching.
 
-## One-Click Start for XAMPP
 
-For Windows friends using XAMPP, use:
-
-```text
-start_university_portal.bat
-```
-
-The launcher will:
-
-- Start XAMPP MySQL if it is not already running.
-- Import `university_portal.sql` into MySQL when the database is missing.
-- Ask before re-importing if `university_portal` already exists.
-- Start a local PHP server.
-- Open the project in the browser.
-
-Default project URL:
-
-```text
-http://127.0.0.1:8080/index.php
-```
-
-If port `8080` is busy, the launcher will try the next free port between `8081` and `8085`.
-
-## Manual Setup
+## Setup
 
 1. Start MySQL from XAMPP.
 2. Import `university_portal.sql` in phpMyAdmin.
